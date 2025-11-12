@@ -4,6 +4,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:gpt_markdown/custom_widgets/markdown_config.dart' show GptMarkdownConfig;
 import 'package:flutter_highlight/flutter_highlight.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_highlight/themes/atom-one-dark-reasonable.dart';
 import '../../icons/lucide_adapter.dart';
@@ -1045,10 +1046,10 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                                   minThumbLength: 32,
                                   thumbColor: MaterialStateProperty.resolveWith((states) {
                                     final base = cs.primary;
-                                    if (states.contains(WidgetState.dragged)) {
+                                    if (states.contains(MaterialState.dragged)) {
                                       return base.withOpacity(0.75);
                                     }
-                                    if (states.contains(WidgetState.hovered)) {
+                                    if (states.contains(MaterialState.hovered)) {
                                       return base.withOpacity(0.60);
                                     }
                                     return base.withOpacity(0.50);
@@ -1474,10 +1475,10 @@ class _MermaidBlockState extends State<_MermaidBlock> {
                                       minThumbLength: 32,
                                       thumbColor: MaterialStateProperty.resolveWith((states) {
                                         final base = Theme.of(context).colorScheme.primary;
-                                        if (states.contains(WidgetState.dragged)) {
+                                        if (states.contains(MaterialState.dragged)) {
                                           return base.withOpacity(0.75);
                                         }
-                                        if (states.contains(WidgetState.hovered)) {
+                                        if (states.contains(MaterialState.hovered)) {
                                           return base.withOpacity(0.60);
                                         }
                                         return base.withOpacity(0.50);
