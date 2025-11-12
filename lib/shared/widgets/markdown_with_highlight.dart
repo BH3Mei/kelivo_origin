@@ -989,10 +989,10 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                         // Desktop: enable mouse-drag scrolling and cap height with vertical scroll
                         final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
                         if (!isDesktop) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          primary: false,
-                          child: HighlightView(
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            primary: false,
+                            child: HighlightView(
                               _trimTrailingNewlines(widget.code),
                               language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
                               theme: MarkdownWithCodeHighlight._transparentBgTheme(
@@ -1005,52 +1005,49 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                                 height: 1.5,
                               ),
                             ),
-                          ),
-                        );
-                      }
+                          );
+                        }
 
-                      final screenH = MediaQuery.of(context).size.height;
-                      final maxH = math.min(420.0, screenH * 0.55);
-                      return ConstrainedBox(
-                        constraints: BoxConstraints(maxHeight: maxH),
-                        child: ScrollConfiguration(
-                          behavior: ScrollConfiguration.of(context).copyWith(
-                            dragDevices: {
-                              ui.PointerDeviceKind.touch,
-                              ui.PointerDeviceKind.mouse,
-                              ui.PointerDeviceKind.stylus,
-                              ui.PointerDeviceKind.unknown,
-                            },
-                          ),
-                          child: Scrollbar(
-                            controller: _vCodeScrollController,
-                            thumbVisibility: true,
-                            interactive: true,
-                            notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
-                            child: SingleChildScrollView(
+                        final screenH = MediaQuery.of(context).size.height;
+                        final maxH = math.min(420.0, screenH * 0.55);
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(maxHeight: maxH),
+                          child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(
+                              dragDevices: {
+                                ui.PointerDeviceKind.touch,
+                                ui.PointerDeviceKind.mouse,
+                                ui.PointerDeviceKind.stylus,
+                                ui.PointerDeviceKind.unknown,
+                              },
+                            ),
+                            child: Scrollbar(
                               controller: _vCodeScrollController,
-                              scrollDirection: Axis.horizontal,
-                              child: HighlightView(
-                                    _trimTrailingNewlines(widget.code),
-                                    language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
-                                    theme: MarkdownWithCodeHighlight._transparentBgTheme(
-                                      isDark ? atomOneDarkReasonableTheme : githubTheme,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    textStyle: TextStyle(
-                                      fontFamily: codeFontFamily,
-                                      fontSize: 13,
-                                      height: 1.5,
-                                    ),
+                              thumbVisibility: true,
+                              interactive: true,
+                              notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
+                              child: SingleChildScrollView(
+                                controller: _vCodeScrollController,
+                                scrollDirection: Axis.horizontal,
+                                child: HighlightView(
+                                  _trimTrailingNewlines(widget.code),
+                                  language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
+                                  theme: MarkdownWithCodeHighlight._transparentBgTheme(
+                                    isDark ? atomOneDarkReasonableTheme : githubTheme,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  textStyle: TextStyle(
+                                    fontFamily: codeFontFamily,
+                                    fontSize: 13,
+                                    height: 1.5,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      );
+                        );
                       },
-                    )
+                    ),
                 : const SizedBox.shrink(key: ValueKey('code-collapsed')),
           ),
           ],
