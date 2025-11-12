@@ -984,10 +984,11 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                     width: double.infinity,
                     color: bodyBg,
                     padding: const EdgeInsets.fromLTRB(10, 6, 6, 10),
-                    child: () {
-                      // Desktop: enable mouse-drag scrolling and cap height with vertical scroll
-                      final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-                      if (!isDesktop) {
+                    child: Builder(
+                      builder: (context) {
+                        // Desktop: enable mouse-drag scrolling and cap height with vertical scroll
+                        final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+                        if (!isDesktop) {
                         return SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           primary: false,
@@ -1048,7 +1049,8 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                           ),
                         ),
                       );
-                  )
+                      },
+                    )
                 : const SizedBox.shrink(key: ValueKey('code-collapsed')),
           ),
           ],
