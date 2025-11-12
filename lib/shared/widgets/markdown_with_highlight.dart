@@ -989,9 +989,9 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                       final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
                       if (!isDesktop) {
                         return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal
-                            primary: false,
-                            child: HighlightView(
+                          scrollDirection: Axis.horizontal,
+                          primary: false,
+                          child: HighlightView(
                               _trimTrailingNewlines(widget.code),
                               language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
                               theme: MarkdownWithCodeHighlight._transparentBgTheme(
@@ -1028,7 +1028,8 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                             notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
                             child: SingleChildScrollView(
                               controller: _vCodeScrollController,
-                                  child: HighlightView(
+                              scrollDirection: Axis.horizontal,
+                              child: HighlightView(
                                     _trimTrailingNewlines(widget.code),
                                     language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
                                     theme: MarkdownWithCodeHighlight._transparentBgTheme(
@@ -1043,8 +1044,9 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                                   ),
                                 ),
                               ),
-                            );
+                            ),
                           ),
+                        ),
                       );
                   )
                 : const SizedBox.shrink(key: ValueKey('code-collapsed')),
