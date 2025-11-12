@@ -12,6 +12,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'dart:async';
 import '../../utils/sandbox_path_resolver.dart';
 import '../../features/chat/pages/image_viewer_page.dart';
 import '../../features/chat/pages/html_preview_page.dart';
@@ -774,6 +775,24 @@ class _CollapsibleCodeBlock extends StatefulWidget {
 class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
   bool _expanded = true;
   late final ScrollController _vCodeScrollController;
+  late final ScrollController _hCodeScrollController;
+  bool _showVBar = false;
+  bool _showHBar = false;
+  final GlobalKey _codeMouseRegionKey = GlobalKey();
+
+  bool _handleCodeScrollNotification(ScrollNotification n) {
+    // Vertical scrollbar: show while scrolling, hide immediately when idle
+    if (n.metrics.axis == Axis.vertical) {
+      if (n is ScrollStartNotification || (n is UserScrollNotification && n.direction != ScrollDirection.idle)) {
+        if (!_showVBar) setState(() => _showVBar = true);
+      }
+      if (n is ScrollEndNotification || (n is UserScrollNotification && n.direction == ScrollDirection.idle)) {
+        if (_showVBar) setState(() => _showVBar = false);
+      }
+    }
+    // Horizontal scrollbar visibility is controlled by hover proximity (bottom/top)
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -992,17 +1011,19 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                           return SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             primary: false,
-                            child: HighlightView(
-                              _trimTrailingNewlines(widget.code),
-                              language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
-                              theme: MarkdownWithCodeHighlight._transparentBgTheme(
-                                isDark ? atomOneDarkReasonableTheme : githubTheme,
-                              ),
-                              padding: EdgeInsets.zero,
-                              textStyle: TextStyle(
-                                fontFamily: codeFontFamily,
-                                fontSize: 13,
-                                height: 1.5,
+                            child: SelectionArea(
+                              child: HighlightView(
+                                _trimTrailingNewlines(widget.code),
+                                language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
+                                theme: MarkdownWithCodeHighlight._transparentBgTheme(
+                                  isDark ? atomOneDarkReasonableTheme : githubTheme,
+                                ),
+                                padding: EdgeInsets.zero,
+                                textStyle: TextStyle(
+                                  fontFamily: codeFontFamily,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
                               ),
                             ),
                           );
@@ -1012,34 +1033,88 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                         final maxH = math.min(420.0, screenH * 0.55);
                         return ConstrainedBox(
                           constraints: BoxConstraints(maxHeight: maxH),
-                          child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(
-                              dragDevices: {
-                                ui.PointerDeviceKind.touch,
-                                ui.PointerDeviceKind.mouse,
-                                ui.PointerDeviceKind.stylus,
-                                ui.PointerDeviceKind.unknown,
-                              },
-                            ),
-                            child: Scrollbar(
-                              controller: _vCodeScrollController,
-                              thumbVisibility: true,
-                              interactive: true,
-                              notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
-                              child: SingleChildScrollView(
-                                controller: _vCodeScrollController,
-                                scrollDirection: Axis.horizontal,
-                                child: HighlightView(
-                                  _trimTrailingNewlines(widget.code),
-                                  language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
-                                  theme: MarkdownWithCodeHighlight._transparentBgTheme(
-                                    isDark ? atomOneDarkReasonableTheme : githubTheme,
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: _handleCodeScrollNotification,
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                scrollbarTheme: ScrollbarThemeData(
+                                  thickness: const MaterialStatePropertyAll(6),
+                                  radius: const Radius.circular(8),
+                                  crossAxisMargin: 2,
+                                  mainAxisMargin: 2,
+                                  minThumbLength: 32,
+                                  thumbColor: MaterialStateProperty.resolveWith((states) {
+                                    final base = cs.primary;
+                                    if (states.contains(WidgetState.dragged)) {
+                                      return base.withOpacity(0.75);
+                                    }
+                                    if (states.contains(WidgetState.hovered)) {
+                                      return base.withOpacity(0.60);
+                                    }
+                                    return base.withOpacity(0.50);
+                                  }),
+                                  trackColor: MaterialStatePropertyAll(
+                                    cs.outlineVariant.withOpacity(isDark ? 0.12 : 0.08),
                                   ),
-                                  padding: EdgeInsets.zero,
-                                  textStyle: TextStyle(
-                                    fontFamily: codeFontFamily,
-                                    fontSize: 13,
-                                    height: 1.5,
+                                  trackBorderColor: const MaterialStatePropertyAll(Colors.transparent),
+                                ),
+                              ),
+                              child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(
+                                  dragDevices: {
+                                    ui.PointerDeviceKind.touch,
+                                    ui.PointerDeviceKind.mouse,
+                                    ui.PointerDeviceKind.stylus,
+                                    ui.PointerDeviceKind.unknown,
+                                  },
+                                ),
+                                child: MouseRegion(
+                                  key: _codeMouseRegionKey,
+                                  onExit: (_) {
+                                    if (_showHBar) setState(() => _showHBar = false);
+                                  },
+                                  onHover: (ev) {
+                                    final box = _codeMouseRegionKey.currentContext?.findRenderObject() as RenderBox?;
+                                    if (box == null) return;
+                                    final h = box.size.height;
+                                    const edge = 16.0;
+                                    final nearEdge = ev.localPosition.dy <= edge || ev.localPosition.dy >= (h - edge);
+                                    if (nearEdge != _showHBar) setState(() => _showHBar = nearEdge);
+                                  },
+                                  child: Scrollbar(
+                                    controller: _vCodeScrollController,
+                                    thumbVisibility: _showVBar,
+                                    interactive: true,
+                                    notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
+                                    child: SingleChildScrollView(
+                                      controller: _vCodeScrollController,
+                                      scrollDirection: Axis.vertical,
+                                      child: Scrollbar(
+                                        controller: _hCodeScrollController,
+                                        thumbVisibility: _showHBar,
+                                        interactive: true,
+                                        notificationPredicate: (notif) => notif.metrics.axis == Axis.horizontal,
+                                        child: SingleChildScrollView(
+                                          controller: _hCodeScrollController,
+                                          scrollDirection: Axis.horizontal,
+                                          child: SelectionArea(
+                                            child: HighlightView(
+                                              _trimTrailingNewlines(widget.code),
+                                              language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
+                                              theme: MarkdownWithCodeHighlight._transparentBgTheme(
+                                                isDark ? atomOneDarkReasonableTheme : githubTheme,
+                                              ),
+                                              padding: EdgeInsets.zero,
+                                              textStyle: TextStyle(
+                                                fontFamily: codeFontFamily,
+                                                fontSize: 13,
+                                                height: 1.5,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1059,10 +1134,12 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
   void initState() {
     super.initState();
     _vCodeScrollController = ScrollController();
+    _hCodeScrollController = ScrollController();
   }
 
   @override
   void dispose() {
+    _hCodeScrollController.dispose();
     _vCodeScrollController.dispose();
     super.dispose();
   }
@@ -1101,6 +1178,22 @@ class _MermaidBlockState extends State<_MermaidBlock> {
   // Stable key to avoid frequent WebView recreation across rebuilds
   final GlobalKey _mermaidViewKey = GlobalKey();
   late final ScrollController _vMermaidScrollController;
+  late final ScrollController _hMermaidScrollController;
+  bool _showVBar = false;
+  bool _showHBar = false;
+  final GlobalKey _mermaidMouseRegionKey = GlobalKey();
+
+  bool _handleMermaidScrollNotification(ScrollNotification n) {
+    if (n.metrics.axis == Axis.vertical) {
+      if (n is ScrollStartNotification || (n is UserScrollNotification && n.direction != ScrollDirection.idle)) {
+        if (!_showVBar) setState(() => _showVBar = true);
+      }
+      if (n is ScrollEndNotification || (n is UserScrollNotification && n.direction == ScrollDirection.idle)) {
+        if (_showVBar) setState(() => _showVBar = false);
+      }
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1344,9 +1437,9 @@ class _MermaidBlockState extends State<_MermaidBlock> {
                           () {
                             final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
                             if (!isDesktop) {
-                              return SelectionContainer.disabled(
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: SelectionArea(
                                   child: HighlightView(
                                     widget.code,
                                     language: 'plaintext',
@@ -1369,38 +1462,89 @@ class _MermaidBlockState extends State<_MermaidBlock> {
                             final maxH = math.min(420.0, screenH * 0.55);
                             return ConstrainedBox(
                               constraints: BoxConstraints(maxHeight: maxH),
-                              child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(
-                                  dragDevices: {
-                                    ui.PointerDeviceKind.touch,
-                                    ui.PointerDeviceKind.mouse,
-                                    ui.PointerDeviceKind.stylus,
-                                    ui.PointerDeviceKind.unknown,
-                                  },
-                                ),
-                                child: Scrollbar(
-                                  controller: _vMermaidScrollController,
-                                  thumbVisibility: true,
-                                  interactive: true,
-                                  notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
-                                  child: SingleChildScrollView(
-                                    controller: _vMermaidScrollController,
-                                    child: SelectionContainer.disabled(
-                                      child: SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: HighlightView(
-                                          widget.code,
-                                          language: 'plaintext',
-                                          theme: MarkdownWithCodeHighlight._transparentBgTheme(
-                                            Theme.of(context).brightness == Brightness.dark
-                                                ? atomOneDarkReasonableTheme
-                                                : githubTheme,
-                                          ),
-                                          padding: EdgeInsets.zero,
-                                          textStyle: const TextStyle(
-                                            fontFamily: 'monospace',
-                                            fontSize: 13,
-                                            height: 1.5,
+                              child: NotificationListener<ScrollNotification>(
+                                onNotification: _handleMermaidScrollNotification,
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                    scrollbarTheme: ScrollbarThemeData(
+                                      thickness: const MaterialStatePropertyAll(6),
+                                      radius: const Radius.circular(8),
+                                      crossAxisMargin: 2,
+                                      mainAxisMargin: 2,
+                                      minThumbLength: 32,
+                                      thumbColor: MaterialStateProperty.resolveWith((states) {
+                                        final base = Theme.of(context).colorScheme.primary;
+                                        if (states.contains(WidgetState.dragged)) {
+                                          return base.withOpacity(0.75);
+                                        }
+                                        if (states.contains(WidgetState.hovered)) {
+                                          return base.withOpacity(0.60);
+                                        }
+                                        return base.withOpacity(0.50);
+                                      }),
+                                      trackColor: MaterialStatePropertyAll(
+                                        Theme.of(context).colorScheme.outlineVariant.withOpacity(
+                                          Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.08,
+                                        ),
+                                      ),
+                                      trackBorderColor: const MaterialStatePropertyAll(Colors.transparent),
+                                    ),
+                                  ),
+                                  child: ScrollConfiguration(
+                                    behavior: ScrollConfiguration.of(context).copyWith(
+                                      dragDevices: {
+                                        ui.PointerDeviceKind.touch,
+                                        ui.PointerDeviceKind.mouse,
+                                        ui.PointerDeviceKind.stylus,
+                                        ui.PointerDeviceKind.unknown,
+                                      },
+                                    ),
+                                    child: MouseRegion(
+                                      key: _mermaidMouseRegionKey,
+                                      onExit: (_) {
+                                        if (_showHBar) setState(() => _showHBar = false);
+                                      },
+                                      onHover: (ev) {
+                                        final box = _mermaidMouseRegionKey.currentContext?.findRenderObject() as RenderBox?;
+                                        if (box == null) return;
+                                        final h = box.size.height;
+                                        const edge = 16.0;
+                                        final nearEdge = ev.localPosition.dy <= edge || ev.localPosition.dy >= (h - edge);
+                                        if (nearEdge != _showHBar) setState(() => _showHBar = nearEdge);
+                                      },
+                                      child: Scrollbar(
+                                        controller: _vMermaidScrollController,
+                                        thumbVisibility: _showVBar,
+                                        interactive: true,
+                                        notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
+                                        child: SingleChildScrollView(
+                                          controller: _vMermaidScrollController,
+                                          child: Scrollbar(
+                                            controller: _hMermaidScrollController,
+                                            thumbVisibility: _showHBar,
+                                            interactive: true,
+                                            notificationPredicate: (notif) => notif.metrics.axis == Axis.horizontal,
+                                            child: SingleChildScrollView(
+                                              controller: _hMermaidScrollController,
+                                              scrollDirection: Axis.horizontal,
+                                              child: SelectionArea(
+                                                child: HighlightView(
+                                                  widget.code,
+                                                  language: 'plaintext',
+                                                  theme: MarkdownWithCodeHighlight._transparentBgTheme(
+                                                    Theme.of(context).brightness == Brightness.dark
+                                                        ? atomOneDarkReasonableTheme
+                                                        : githubTheme,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  textStyle: const TextStyle(
+                                                    fontFamily: 'monospace',
+                                                    fontSize: 13,
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -1439,10 +1583,12 @@ class _MermaidBlockState extends State<_MermaidBlock> {
   void initState() {
     super.initState();
     _vMermaidScrollController = ScrollController();
+    _hMermaidScrollController = ScrollController();
   }
 
   @override
   void dispose() {
+    _hMermaidScrollController.dispose();
     _vMermaidScrollController.dispose();
     super.dispose();
   }
