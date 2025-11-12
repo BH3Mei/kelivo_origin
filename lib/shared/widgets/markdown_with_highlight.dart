@@ -1047,7 +1047,7 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                           ),
                         );
                       },
-                    ),
+                    ))
                 : const SizedBox.shrink(key: ValueKey('code-collapsed')),
           ),
           ],
