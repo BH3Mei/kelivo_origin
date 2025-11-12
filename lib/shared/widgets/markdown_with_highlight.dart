@@ -988,9 +988,8 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                       // Desktop: enable mouse-drag scrolling and cap height with vertical scroll
                       final bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
                       if (!isDesktop) {
-                        return SelectionContainer.disabled(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal
                             primary: false,
                             child: HighlightView(
                               _trimTrailingNewlines(widget.code),
@@ -1029,10 +1028,6 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                             notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
                             child: SingleChildScrollView(
                               controller: _vCodeScrollController,
-                              child: SelectionContainer.disabled(
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  primary: false,
                                   child: HighlightView(
                                     _trimTrailingNewlines(widget.code),
                                     language: MarkdownWithCodeHighlight._normalizeLanguage(widget.language) ?? 'plaintext',
@@ -1048,11 +1043,9 @@ class _CollapsibleCodeBlockState extends State<_CollapsibleCodeBlock> {
                                   ),
                                 ),
                               ),
-                            ),
+                            );
                           ),
-                        ),
                       );
-                    }(),
                   )
                 : const SizedBox.shrink(key: ValueKey('code-collapsed')),
           ),

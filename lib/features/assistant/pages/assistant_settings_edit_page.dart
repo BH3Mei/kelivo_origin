@@ -2920,28 +2920,33 @@ class _PromptTabState extends State<_PromptTab> {
                   .updateAssistant(a.copyWith(systemPrompt: v)),
               // minLines: 1,
               maxLines: 8,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-              onEditingComplete: () => FocusScope.of(context).unfocus(),
-              contextMenuBuilder: Platform.isIOS
-                  ? (BuildContext context, EditableTextState state) {
-                      return AdaptiveTextSelectionToolbar.buttonItems(
-                        anchors: state.contextMenuAnchors,
-                        buttonItems: <ContextMenuButtonItem>[
-                          ...state.contextMenuButtonItems,
-                          ContextMenuButtonItem(
-                            onPressed: () {
-                              // Insert a newline at current caret or replace selection
-                              _insertNewlineAtCursor();
-                              state.hideToolbar();
-                            },
-                            label: l10n.chatInputBarInsertNewline,
-                          ),
-                        ],
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              onSubmitted: (_) {}, // Don't unfocus on enter in multi-line mode
+              onEditingComplete: () {}, // Don't unfocus on editing complete in multi-line mode
+              enableInteractiveSelection: true,
+              contextMenuBuilder:
+                  (BuildContext context, EditableTextState state) {
+                    final items = <ContextMenuButtonItem>[...state.contextMenuButtonItems];
+
+                    // Add insert newline option for iOS
+                    if (Platform.isIOS) {
+                      items.add(
+                        ContextMenuButtonItem(
+                          onPressed: () {
+                            _insertNewlineAtCursor();
+                            state.hideToolbar();
+                          },
+                          label: l10n.chatInputBarInsertNewline,
+                        ),
                       );
                     }
-                  : null,
+
+                    return AdaptiveTextSelectionToolbar.buttonItems(
+                      anchors: state.contextMenuAnchors,
+                      buttonItems: items,
+                    );
+                  },
               decoration: InputDecoration(
                 hintText: l10n.assistantEditSystemPromptHint,
                 border: OutlineInputBorder(
