@@ -68,6 +68,17 @@ jobs:
       - name: Build Android APK (Debug)
         run: flutter build apk --debug
 
+      - name: Ensure GitHub Release exists (for tag push)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
       - name: Collect and rename artifacts
         run: |
           set -e
@@ -84,7 +95,7 @@ jobs:
           ls -la dist
 
       - name: Upload release assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
