@@ -61,8 +61,8 @@ jobs:
           keyPassword=${ANDROID_KEY_PASSWORD}
           EOF
 
-      - name: Build Android APK (Debug)
-        run: flutter build apk --debug
+      - name: Build Android APK (Debug, split per ABI)
+        run: flutter build apk --debug --split-per-abi
 
       - name: Collect and rename artifacts
         run: |
@@ -72,9 +72,17 @@ jobs:
           echo "Ref name: $REF_NAME"
           ls -la build/app/outputs/flutter-apk || true
 
-          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            cp build/app/outputs/flutter-apk/app-debug.apk "dist/kelivo-${REF_NAME}-debug.apk"
+          # Rename per-ABI debug APKs
+          if [ -f build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk ]; then
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk "dist/kelivo-${REF_NAME}-arm64-v8a-debug.apk"
           fi
+          if [ -f build/app/outputs/flutter-apk/app-armeabi-v7a-debug.apk ]; then
+            cp build/app/outputs/flutter-apk/app-armeabi-v7a-debug.apk "dist/kelivo-${REF_NAME}-armeabi-v7a-debug.apk"
+          fi
+          if [ -f build/app/outputs/flutter-apk/app-x86_64-debug.apk ]; then
+            cp build/app/outputs/flutter-apk/app-x86_64-debug.apk "dist/kelivo-${REF_NAME}-x86_64-debug.apk"
+          fi
+          
           echo "Artifacts:"
           ls -la dist
 
