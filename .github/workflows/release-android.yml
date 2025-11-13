@@ -64,17 +64,6 @@ jobs:
       - name: Build Android APK (Debug)
         run: flutter build apk --debug
 
-      - name: Ensure GitHub Release exists (for tag push)
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-
       - name: Collect and rename artifacts
         run: |
           set -e
@@ -82,7 +71,6 @@ jobs:
           REF_NAME="${GITHUB_REF_NAME:-${{ github.ref_name }}}"
           echo "Ref name: $REF_NAME"
           ls -la build/app/outputs/flutter-apk || true
-          ls -la build/app/outputs/bundle/release || true
 
           if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
             cp build/app/outputs/flutter-apk/app-debug.apk "dist/kelivo-${REF_NAME}-debug.apk"
@@ -90,19 +78,21 @@ jobs:
           echo "Artifacts:"
           ls -la dist
 
-      - name: Upload to GitHub Release (gh CLI)
+      - name: Create/Update GitHub Release and Upload APK
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           TAG="${{ github.ref_name }}"
-          echo "Ensuring release exists for $TAG ..."
+          echo "Creating or updating release for $TAG ..."
+          
+          # Try to create release (will fail if exists, that's ok)
+          gh release create "$TAG" dist/* --title "$TAG" --notes "Auto-generated debug build for $TAG" || true
+          
+          # If release already exists, upload files
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release exists."
-          else
-            gh release create "$TAG" -t "$TAG" -n "Auto-generated debug build for $TAG"
+            echo "Release exists, uploading assets..."
+            gh release upload "$TAG" dist/* --clobber
           fi
-          echo "Uploading assets ..."
-          gh release upload "$TAG" dist/* --clobber
 
