@@ -94,12 +94,19 @@ jobs:
           echo "Artifacts:"
           ls -la dist
 
-      - name: Upload release assets
+      - name: Upload to GitHub Release (gh CLI)
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ github.ref_name }}"
+          echo "Ensuring release exists for $TAG ..."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release exists."
+          else
+            gh release create "$TAG" -t "$TAG" -n "Auto-generated debug build for $TAG"
+          fi
+          echo "Uploading assets ..."
+          gh release upload "$TAG" dist/* --clobber
 
