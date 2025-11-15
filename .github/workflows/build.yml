@@ -116,7 +116,7 @@ jobs:
           cd build/app/outputs/flutter-apk
           for file in app-*-release.apk; do
             abi=$(echo "$file" | sed -E 's/app-(.*)-release\.apk/\1/')
-            mv "$file" "Kelivo_android_${VERSION}_${abi}.apk"
+            mv "$file" "KelivoFork_android_${VERSION}_${abi}.apk"
           done
 
       - name: 🚀 发布到 Release
@@ -125,25 +125,25 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.release_tag }}
           name: ${{ github.event.inputs.release_tag }}
-          files: build/app/outputs/flutter-apk/Kelivo_android_*.apk
+          files: build/app/outputs/flutter-apk/KelivoFork_android_*.apk
 
       - name: 📤 上传构建产物 (arm64-v8a)
         uses: actions/upload-artifact@v4
         with:
           name: Android-arm64-v8a
-          path: build/app/outputs/flutter-apk/Kelivo_android_*_arm64-v8a.apk
+          path: build/app/outputs/flutter-apk/KelivoFork_android_*_arm64-v8a.apk
 
       - name: 📤 上传构建产物 (armeabi-v7a)
         uses: actions/upload-artifact@v4
         with:
           name: Android-armeabi-v7a
-          path: build/app/outputs/flutter-apk/Kelivo_android_*_armeabi-v7a.apk
+          path: build/app/outputs/flutter-apk/KelivoFork_android_*_armeabi-v7a.apk
 
       - name: 📤 上传构建产物 (x86_64)
         uses: actions/upload-artifact@v4
         with:
           name: Android-x86_64
-          path: build/app/outputs/flutter-apk/Kelivo_android_*_x86_64.apk
+          path: build/app/outputs/flutter-apk/KelivoFork_android_*_x86_64.apk
 
   # iOS 构建
   ios:
@@ -185,7 +185,7 @@ jobs:
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r ../../../Kelivo_ios_${VERSION}.ipa Payload
+          zip -r ../../../KelivoFork_ios_${VERSION}.ipa Payload
 
       - name: 🚀 发布到 Release
         if: ${{ github.event.inputs.publish_release == 'true' && github.event.inputs.release_tag != '' }}
@@ -193,13 +193,13 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.release_tag }}
           name: ${{ github.event.inputs.release_tag }}
-          files: Kelivo_ios_*.ipa
+          files: KelivoFork_ios_*.ipa
 
       - name: 📤 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: iOS-IPA
-          path: Kelivo_ios_*.ipa
+          path: KelivoFork_ios_*.ipa
 
   # macOS 构建
   macos:
@@ -240,31 +240,31 @@ jobs:
         run: |
           brew install create-dmg
           create-dmg \
-            --volname "Kelivo" \
+            --volname "Kelivo BH3Mei" \
             --window-pos 200 120 \
             --window-size 800 400 \
             --icon-size 100 \
             --app-drop-link 600 185 \
-            "Kelivo_macos_${VERSION}.dmg" \
+            "KelivoFork_macos_${VERSION}.dmg" \
             "build/macos/Build/Products/Release/kelivo.app" || true
           # 如果 create-dmg 失败，使用简单方式
-          if [ ! -f "Kelivo_macos_${VERSION}.dmg" ]; then
-            hdiutil create -volname Kelivo -srcfolder build/macos/Build/Products/Release/kelivo.app -ov -format UDZO Kelivo_macos_${VERSION}.dmg
+          if [ ! -f "KelivoFork_macos_${VERSION}.dmg" ]; then
+            hdiutil create -volname "Kelivo BH3Mei" -srcfolder build/macos/Build/Products/Release/kelivo.app -ov -format UDZO KelivoFork_macos_${VERSION}.dmg
           fi
 
-      - name: 🚀 发布到 Release
+      - name: 发布到 Release
         if: ${{ github.event.inputs.publish_release == 'true' && github.event.inputs.release_tag != '' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.release_tag }}
           name: ${{ github.event.inputs.release_tag }}
-          files: Kelivo_macos_*.dmg
+          files: KelivoFork_macos_*.dmg
 
       - name: 📤 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: macOS-DMG
-          path: Kelivo_macos_*.dmg
+          path: KelivoFork_macos_*.dmg
 
   # Windows 构建
   windows:
@@ -320,7 +320,7 @@ jobs:
       - name: 📦 打包 ZIP
         shell: pwsh
         run: |
-          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "Kelivo_windows_$env:VERSION.zip"
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "KelivoFork_windows_$env:VERSION.zip"
 
       - name: 🔧 安装 Inno Setup
         run: choco install innosetup -y
@@ -370,20 +370,20 @@ jobs:
 
           # 创建 Inno Setup 脚本
           $issContent = @"
-          #define MyAppName "Kelivo"
+          #define MyAppName "Kelivo BH3Mei"
           #define MyAppVersion "$env:VERSION"
-          #define MyAppPublisher "Psyche"
+          #define MyAppPublisher "BH3Mei"
           #define MyAppExeName "kelivo.exe"
 
           [Setup]
-          AppId={{A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A3B4C5D}}
+          AppId={{B8C9D0E1-F2A3-5B6C-9D0E-1F2A3B4C5D6E}}
           AppName={#MyAppName}
           AppVersion={#MyAppVersion}
           AppPublisher={#MyAppPublisher}
           DefaultDirName={autopf}\{#MyAppName}
           DefaultGroupName={#MyAppName}
           OutputDir=.
-          OutputBaseFilename=Kelivo_windows_{#MyAppVersion}_setup
+          OutputBaseFilename=KelivoFork_windows_{#MyAppVersion}_setup
           Compression=lzma2
           SolidCompression=yes
           WizardStyle=modern
@@ -421,20 +421,20 @@ jobs:
           tag_name: ${{ github.event.inputs.release_tag }}
           name: ${{ github.event.inputs.release_tag }}
           files: |
-            Kelivo_windows_*.zip
-            Kelivo_windows_*_setup.exe
+            KelivoFork_windows_*.zip
+            KelivoFork_windows_*_setup.exe
 
       - name: 📤 上传构建产物 (ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: Windows-ZIP
-          path: Kelivo_windows_*.zip
+          path: KelivoFork_windows_*.zip
 
       - name: 📤 上传构建产物 (Installer)
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Installer
-          path: Kelivo_windows_*_setup.exe
+          path: KelivoFork_windows_*_setup.exe
 
   # Linux 构建
   linux:
@@ -484,7 +484,7 @@ jobs:
       - name: 📦 打包 tar.gz
         run: |
           cd build/linux/x64/release/bundle
-          tar -czf ../../../../../Kelivo_linux_${VERSION}.tar.gz .
+          tar -czf ../../../../../KelivoFork_linux_${VERSION}.tar.gz .
 
       - name: 📦 创建 AppImage
         run: |
@@ -527,7 +527,7 @@ jobs:
           fi
           
           # 构建 AppImage
-          ARCH=x86_64 ./appimagetool AppDir Kelivo_linux_${VERSION}.AppImage
+          ARCH=x86_64 ./appimagetool AppDir KelivoFork_linux_${VERSION}.AppImage
 
       - name: 📦 创建 DEB 包
         run: |
@@ -572,7 +572,7 @@ jobs:
           chmod +x deb/opt/kelivo/kelivo.sh
           
           # 构建 DEB 包
-          dpkg-deb --build deb Kelivo_linux_${VERSION}_amd64.deb
+          dpkg-deb --build deb KelivoFork_linux_${VERSION}_amd64.deb
 
       - name: 📦 创建 RPM 包
         run: |
@@ -626,7 +626,7 @@ jobs:
           
           # 构建 RPM
           rpmbuild -bb ~/rpmbuild/SPECS/kelivo.spec
-          cp ~/rpmbuild/RPMS/x86_64/kelivo-${VERSION_NUMBER}-1.*.rpm Kelivo_linux_${VERSION}.rpm
+          cp ~/rpmbuild/RPMS/x86_64/kelivo-${VERSION_NUMBER}-1.*.rpm KelivoFork_linux_${VERSION}.rpm
 
       - name: 🚀 发布到 Release
         if: ${{ github.event.inputs.publish_release == 'true' && github.event.inputs.release_tag != '' }}
@@ -635,31 +635,31 @@ jobs:
           tag_name: ${{ github.event.inputs.release_tag }}
           name: ${{ github.event.inputs.release_tag }}
           files: |
-            Kelivo_linux_*.tar.gz
-            Kelivo_linux_*.AppImage
-            Kelivo_linux_*_amd64.deb
-            Kelivo_linux_*.rpm
+            KelivoFork_linux_*.tar.gz
+            KelivoFork_linux_*.AppImage
+            KelivoFork_linux_*_amd64.deb
+            KelivoFork_linux_*.rpm
 
       - name: 📤 上传构建产物 (tar.gz)
         uses: actions/upload-artifact@v4
         with:
           name: Linux-tar.gz
-          path: Kelivo_linux_*.tar.gz
+          path: KelivoFork_linux_*.tar.gz
 
       - name: 📤 上传构建产物 (AppImage)
         uses: actions/upload-artifact@v4
         with:
           name: Linux-AppImage
-          path: Kelivo_linux_*.AppImage
+          path: KelivoFork_linux_*.AppImage
 
       - name: 📤 上传构建产物 (DEB)
         uses: actions/upload-artifact@v4
         with:
           name: Linux-DEB
-          path: Kelivo_linux_*_amd64.deb
+          path: KelivoFork_linux_*_amd64.deb
 
       - name: 📤 上传构建产物 (RPM)
         uses: actions/upload-artifact@v4
         with:
           name: Linux-RPM
-          path: Kelivo_linux_*.rpm
+          path: KelivoFork_linux_*.rpm
